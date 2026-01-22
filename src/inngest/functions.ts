@@ -27,16 +27,15 @@ export const demoGenerate = inngest.createFunction(
     //   return results.filter(Boolean).join("\n\n");
     // });
 
-
     const scrapedContent = await step.run("scrape-urls", async () => {
       const results = await Promise.all(
         urls.map(async (url) => {
           const result = await firecrawl.scrapeUrl(url, {
             formats: ["markdown"],
           });
-          
+
           // Check if the result is successful and has markdown
-          if (result.success && 'markdown' in result) {
+          if (result.success && "markdown" in result) {
             return result.markdown ?? null;
           }
           return null;
@@ -53,7 +52,22 @@ export const demoGenerate = inngest.createFunction(
       return await generateText({
         model: anthropic("claude-3-haiku-20240307"),
         prompt: finalPrompt,
+        experimental_telemetry: {
+          isEnabled: true,
+          recordInputs: true,
+          recordOutputs: true,
+        },
       });
+    });
+  }
+);
+
+export const demoError = inngest.createFunction(
+  { id: "demo-generate" },
+  { event: "demo/error" },
+  async ({ step }) => {
+    await step.run("fail", async () => {
+      throw new Error("Inngest error: Background job failed!");
     });
   }
 );
