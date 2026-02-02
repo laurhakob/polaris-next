@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  ClerkProvider,
-
-  useAuth,
-  UserButton,
-} from "@clerk/nextjs";
+import { ClerkProvider, useAuth } from "@clerk/nextjs";
 import {
   Authenticated,
   AuthLoading,
@@ -29,12 +24,9 @@ export const Providers = ({ children }: { children: React.ReactNode }) => {
           enableSystem
           disableTransitionOnChange
         >
-          <Authenticated>
-            <UserButton />
-            {children}
-          </Authenticated>
+          <Authenticated>{children}</Authenticated>
           <Unauthenticated>
-           <UnauthenticatedView />
+            <UnauthenticatedView />
           </Unauthenticated>
           <AuthLoading>
             <AuthLoadingView />
