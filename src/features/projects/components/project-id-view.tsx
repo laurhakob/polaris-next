@@ -6,6 +6,7 @@ import { useState } from "react";
 import { FaGithub } from "react-icons/fa";
 import { Allotment } from "allotment";
 import { FileExplorer } from "./file-explorer";
+import { EditorView } from "@/features/editor/components/editor-view";
 
 
 const MIN_SIDEBAR_WIDTH = 200;
@@ -81,7 +82,7 @@ export const ProjectIdView = ({ projectId }: { projectId: Id<"projects"> }) => {
             </Allotment.Pane>
             <Allotment.Pane>
                 <div>Editor view</div>
-              {/* <EditorView projectId={projectId} /> */}
+              <EditorView projectId={projectId} />
             </Allotment.Pane>
           </Allotment>
         </div>

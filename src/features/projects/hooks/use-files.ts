@@ -1,7 +1,8 @@
 import { useMutation, useQuery } from "convex/react";
-import { api } from "../../../../convex/_generated/api";
 import { Id } from "../../../../convex/_generated/dataModel";
+import { api } from "../../../../convex/_generated/api";
 
+// Sort: folders first, then files, alphabetically within each group
 const sortFiles = <T extends { type: "file" | "folder"; name: string }>(
   files: T[]
 ): T[] => {
@@ -12,6 +13,22 @@ const sortFiles = <T extends { type: "file" | "folder"; name: string }>(
   });
 };
 
+export const useFiles = (projectId: Id<"projects"> | null) => {
+  return useQuery(api.files.getFiles, projectId ? { projectId } : "skip");
+};
+
+export const useFile = (fileId: Id<"files"> | null) => {
+  return useQuery(api.files.getFile, fileId ? { id: fileId } : "skip");
+};
+
+export const useFilePath = (fileId: Id<"files"> | null) => {
+  return useQuery(api.files.getFilePath, fileId ? { id: fileId } : "skip");
+};
+
+export const useUpdateFile = () => {
+  return useMutation(api.files.updateFile);
+};
+ 
 export const useCreateFile = () => {
   return useMutation(api.files.createFile).withOptimisticUpdate(
     (localStore, args) => {
@@ -101,7 +118,7 @@ export const useRenameFile = ({
         );
       }
     }
-  );
+  )
 };
 
 export const useDeleteFile = ({
@@ -140,6 +157,6 @@ export const useFolderContents = ({
 }) => {
   return useQuery(
     api.files.getFolderContents,
-    enabled ? { projectId, parentId } : "skip"
+    enabled ? { projectId, parentId } : "skip",
   );
 };
