@@ -118,7 +118,7 @@ export const processMessage = inngest.createFunction(
         name: "title-generator",
         system: TITLE_GENERATOR_SYSTEM_PROMPT,
         model: anthropic({
-          model: "claude-3-5-haiku-20241022",
+          model: "claude-3-5-haiku-latest",
           defaultParameters: { temperature: 0, max_tokens: 50 },
         }),
        });
