@@ -1,23 +1,25 @@
 "use client";
 
-import { cn } from "@/lib/utils";
-import { Id } from "../../../../convex/_generated/dataModel";
 import { useState } from "react";
-import { FaGithub } from "react-icons/fa";
 import { Allotment } from "allotment";
-import { FileExplorer } from "./file-explorer";
+
+import { cn } from "@/lib/utils";
 import { EditorView } from "@/features/editor/components/editor-view";
+
+import { FileExplorer } from "./file-explorer";
+import { Id } from "../../../../convex/_generated/dataModel";
 import { PreviewView } from "./preview-view";
+import { ExportPopover } from "./export-popover";
 
 const MIN_SIDEBAR_WIDTH = 200;
 const MAX_SIDEBAR_WIDTH = 800;
-const DEFAULT_SIDEBAR_WIDTH = 350; 
+const DEFAULT_SIDEBAR_WIDTH = 350;
 const DEFAULT_MAIN_SIZE = 1000;
 
 const Tab = ({
   label,
   isActive,
-  onClick,
+  onClick
 }: {
   label: string;
   isActive: boolean;
@@ -36,7 +38,11 @@ const Tab = ({
   );
 };
 
-export const ProjectIdView = ({ projectId }: { projectId: Id<"projects"> }) => {
+export const ProjectIdView = ({ 
+  projectId
+}: { 
+  projectId: Id<"projects">
+}) => {
   const [activeView, setActiveView] = useState<"editor" | "preview">("editor");
 
   return (
@@ -47,27 +53,20 @@ export const ProjectIdView = ({ projectId }: { projectId: Id<"projects"> }) => {
           isActive={activeView === "editor"}
           onClick={() => setActiveView("editor")}
         />
-
         <Tab
           label="Preview"
           isActive={activeView === "preview"}
           onClick={() => setActiveView("preview")}
         />
         <div className="flex-1 flex justify-end h-full">
-          <div className="flex items-center gap-1.5 h-full px-3 cursor-pointer text-muted-foreground border-l hover:bg-accent/30">
-            <FaGithub className="size-3.5" />
-            <span className="text-sm">Export</span>
-          </div>
-          {/* <ExportPopover projectId={projectId} /> */}
+          <ExportPopover projectId={projectId} />
         </div>
       </nav>
       <div className="flex-1 relative">
-        <div
-          className={cn(
-            "absolute inset-0",
-            activeView === "editor" ? "visible" : "invisible"
-          )}
-        >
+        <div className={cn(
+          "absolute inset-0",
+          activeView === "editor" ? "visible" : "invisible"
+        )}>
           <Allotment defaultSizes={[DEFAULT_SIDEBAR_WIDTH, DEFAULT_MAIN_SIZE]}>
             <Allotment.Pane
               snap
@@ -78,17 +77,14 @@ export const ProjectIdView = ({ projectId }: { projectId: Id<"projects"> }) => {
               <FileExplorer projectId={projectId} />
             </Allotment.Pane>
             <Allotment.Pane>
-              <div>Editor view</div>
               <EditorView projectId={projectId} />
             </Allotment.Pane>
           </Allotment>
         </div>
-        <div
-          className={cn(
-            "absolute inset-0",
-            activeView === "preview" ? "visible" : "invisible"
-          )}
-        >
+        <div className={cn(
+          "absolute inset-0",
+          activeView === "preview" ? "visible" : "invisible"
+        )}>
           <PreviewView projectId={projectId} />
         </div>
       </div>
