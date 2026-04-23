@@ -82,5 +82,5 @@ This project uses Next.js 16, where the old `middleware.ts` convention is rename
 
 - shadcn/ui (New York style, `neutral` base) under `src/components/ui`. Configured in `components.json`; add components with `npx shadcn@latest add <name>`.
 - Feature-first layout under `src/features/<feature>/{components,hooks,inngest,store,extensions,...}` — new feature code should follow this shape rather than going into top-level `src/components` or `src/lib`.
-- AI model selection is intentional per call-site: Gemini 2.5 Flash for the coding agent and quick-edit; Gemini 2.5 Flash-Lite for inline suggestions, title generation, and the demo Inngest job. Don't unify these without reason.
+- AI model selection is intentional per call-site: Gemini 2.5 Pro for the coding agent (handles nested tool schemas like `createFiles` reliably — Flash hits `MALFORMED_FUNCTION_CALL` on those); Gemini 2.5 Flash for quick-edit; Gemini 2.5 Flash-Lite for inline suggestions, title generation, and the demo Inngest job. Don't unify these without reason.
 - Optimistic updates on file mutations (`src/features/projects/hooks/use-files.ts`) — when adding a new file-mutating hook, follow the `withOptimisticUpdate` pattern against `api.files.getFolderContents` so the tree doesn't flicker.
