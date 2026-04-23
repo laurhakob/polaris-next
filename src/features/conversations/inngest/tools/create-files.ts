@@ -13,14 +13,8 @@ interface CreateFilesToolOptions {
 
 const paramsSchema = z.object({
   parentId: z.string(),
-  files: z
-    .array(
-      z.object({
-        name: z.string().min(1, "File name cannot be empty"),
-        content: z.string(),
-      })
-    )
-    .min(1, "Provide at least one file to create"),
+  name: z.string().min(1, "File name cannot be empty"),
+  content: z.string(),
 });
 
 export const createCreateFilesTool = ({
@@ -28,23 +22,17 @@ export const createCreateFilesTool = ({
   internalKey,
 }: CreateFilesToolOptions) => {
   return createTool({
-    name: "createFiles",
+    name: "createFile",
     description:
-      "Create multiple files at once in the same folder. Use this to batch create files that share the same parent folder. More efficient than creating files one by one.",
+      "Create a single file in the project. Call this tool once per file you need to create. Use listFiles first to get valid folder IDs for parentId.",
     parameters: z.object({
       parentId: z
         .string()
         .describe(
           "The ID of the parent folder. Use empty string for root level. Must be a valid folder ID from listFiles."
         ),
-      files: z
-        .array(
-          z.object({
-            name: z.string().describe("The file name including extension"),
-            content: z.string().describe("The file content"),
-          })
-        )
-        .describe("Array of files to create"),
+      name: z.string().describe("The file name including extension"),
+      content: z.string().describe("The file content"),
     }),
     handler: async (params, { step: toolStep }) => {
       const parsed = paramsSchema.safeParse(params);
@@ -52,10 +40,10 @@ export const createCreateFilesTool = ({
         return `Error: ${parsed.error.issues[0].message}`;
       }
 
-      const { parentId, files } = parsed.data;
+      const { parentId, name, content } = parsed.data;
 
       try {
-        return await toolStep?.run("create-files", async () => {
+        return await toolStep?.run("create-file", async () => {
           let resolvedParentId: Id<"files"> | undefined;
 
           if (parentId && parentId !== "") {
@@ -80,24 +68,19 @@ export const createCreateFilesTool = ({
             internalKey,
             projectId,
             parentId: resolvedParentId,
-            files,
+            files: [{ name, content }],
           });
 
-          const created = results.filter((r) => !r.error);
-          const failed = results.filter((r) => r.error);
+          const result = results[0];
 
-          let response = `Created ${created.length} file(s)`;
-          if (created.length > 0) {
-            response += `: ${created.map((r) => r.name).join(", ")}`;
-          }
-          if (failed.length > 0) {
-            response += `. Failed: ${failed.map((r) => `${r.name} (${r.error})`).join(", ")}`;
+          if (result.error) {
+            return `Failed to create "${result.name}": ${result.error}`;
           }
 
-          return response;
+          return `Created file "${result.name}"`;
         });
       } catch (error) {
-        return `Error creating files: ${error instanceof Error ? error.message : "Unknown error"}`;
+        return `Error creating file: ${error instanceof Error ? error.message : "Unknown error"}`;
       }
     }
   });

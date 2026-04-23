@@ -157,7 +157,7 @@ export const processMessage = inngest.createFunction(
       description: "An expert AI coding assistant",
       system: systemPrompt,
       model: gemini({
-        model: "gemini-2.5-pro",
+        model: "gemini-2.5-flash",
         apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
         defaultParameters: {
           generationConfig: { temperature: 0.3, maxOutputTokens: 16000 },
