@@ -9,7 +9,6 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^3.0.18",
     "@ai-sdk/google": "^3.0.10",
     "@clerk/nextjs": "^6.36.8",
     "@clerk/themes": "^2.4.48",

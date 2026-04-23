@@ -1,7 +1,7 @@
 import { generateText } from "ai";
 import { inngest } from "./client";
 import { firecrawl } from "@/lib/firecrawl";
-import { anthropic } from "@ai-sdk/anthropic";
+import { google } from "@ai-sdk/google";
 
 const URL_REGEX = /https?:\/\/[^\s]+/g;
 
@@ -50,7 +50,7 @@ export const demoGenerate = inngest.createFunction(
 
     await step.run("generate-text", async () => {
       return await generateText({
-        model: anthropic("claude-3-haiku-20240307"),
+        model: google("gemini-2.5-flash-lite"),
         prompt: finalPrompt,
         experimental_telemetry: {
           isEnabled: true,

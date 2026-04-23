@@ -1,4 +1,4 @@
-import { createAgent, anthropic, createNetwork } from "@inngest/agent-kit";
+import { createAgent, gemini, createNetwork } from "@inngest/agent-kit";
 
 import { inngest } from "@/inngest/client";
 import { Id } from "../../../../convex/_generated/dataModel";
@@ -115,9 +115,12 @@ export const processMessage = inngest.createFunction(
       const titleAgent = createAgent({
         name: "title-generator",
         system: TITLE_GENERATOR_SYSTEM_PROMPT,
-        model: anthropic({
-          model: "claude-3-haiku-20240307",
-          defaultParameters: { temperature: 0, max_tokens: 50 },
+        model: gemini({
+          model: "gemini-2.5-flash-lite",
+          apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
+          defaultParameters: {
+            generationConfig: { temperature: 0, maxOutputTokens: 50 },
+          },
         }),
       });
 
@@ -153,9 +156,12 @@ export const processMessage = inngest.createFunction(
       name: "polaris",
       description: "An expert AI coding assistant",
       system: systemPrompt,
-      model: anthropic({
-        model: "claude-opus-4-20250514",
-        defaultParameters: { temperature: 0.3, max_tokens: 16000 },
+      model: gemini({
+        model: "gemini-2.5-flash",
+        apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
+        defaultParameters: {
+          generationConfig: { temperature: 0.3, maxOutputTokens: 16000 },
+        },
       }),
       tools: [
         createListFilesTool({ internalKey, projectId }),
@@ -183,7 +189,7 @@ export const processMessage = inngest.createFunction(
           (m) => m.type === "tool_call"
         );
 
-        // Anthropic outputs text AND tool calls together
+        // Gemini (via agent-kit) outputs text AND tool calls together
         // Only stop if there's text WITHOUT tool calls (final response)
         if (hasTextResponse && !hasToolCalls) {
           return undefined;
