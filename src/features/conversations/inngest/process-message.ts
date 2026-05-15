@@ -197,12 +197,19 @@ export const processMessage = inngest.createFunction(
       maxIter: 20,
       router: ({ network }) => {
         const lastResult = network.state.results.at(-1);
-        const hasToolCalls = lastResult?.output.some(
-          (m) => m.type === "tool_call"
-        );
+
+        // First iteration: no history yet, so the agent hasn't run.
+        // Always invoke it at least once.
+        if (!lastResult) {
+          return codingAgent;
+        }
 
         // DeepSeek (OpenAI-compatible) emits tool calls and final text in
-        // separate turns. Terminate when the last turn has no tool calls.
+        // separate turns. Terminate when the last turn has no tool calls —
+        // the agent has produced its final answer.
+        const hasToolCalls = lastResult.output.some(
+          (m) => m.type === "tool_call"
+        );
         if (!hasToolCalls) {
           return undefined;
         }
