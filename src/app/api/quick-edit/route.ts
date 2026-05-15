@@ -2,7 +2,7 @@ import { z } from "zod";
 import { generateText, Output } from "ai";
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { google } from "@ai-sdk/google";
+import { deepseek } from "@ai-sdk/deepseek";
 
 import { firecrawl } from "@/lib/firecrawl";
 
@@ -98,7 +98,7 @@ export async function POST(request: Request) {
       .replace("{documentation}", documentationContext);
 
     const { output } = await generateText({
-      model: google("gemini-2.5-flash"),
+      model: deepseek("deepseek-chat"),
       output: Output.object({ schema: quickEditSchema }),
       prompt,
     });

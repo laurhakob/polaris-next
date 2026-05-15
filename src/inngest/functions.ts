@@ -1,7 +1,7 @@
 import { generateText } from "ai";
 import { inngest } from "./client";
 import { firecrawl } from "@/lib/firecrawl";
-import { google } from "@ai-sdk/google";
+import { deepseek } from "@ai-sdk/deepseek";
 
 const URL_REGEX = /https?:\/\/[^\s]+/g;
 
@@ -50,7 +50,7 @@ export const demoGenerate = inngest.createFunction(
 
     await step.run("generate-text", async () => {
       return await generateText({
-        model: google("gemini-2.5-flash-lite"),
+        model: deepseek("deepseek-chat"),
         prompt: finalPrompt,
         experimental_telemetry: {
           isEnabled: true,

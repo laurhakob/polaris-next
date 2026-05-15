@@ -1,4 +1,10 @@
-import { createAgent, gemini, createNetwork } from "@inngest/agent-kit";
+import { createAgent, createNetwork, openai } from "@inngest/agent-kit";
+
+// DeepSeek is OpenAI-compatible. Using agent-kit's bundled `openai` adapter
+// with DeepSeek's baseUrl avoids a duplicate `@inngest/ai` install at the
+// project root (`inngest` ships 0.1.7, agent-kit pins 0.1.6) that produces
+// a typecheck mismatch on `createAgent`'s model parameter.
+const DEEPSEEK_BASE_URL = "https://api.deepseek.com/v1/";
 
 import { inngest } from "@/inngest/client";
 import { Id } from "../../../../convex/_generated/dataModel";
@@ -115,12 +121,17 @@ export const processMessage = inngest.createFunction(
       const titleAgent = createAgent({
         name: "title-generator",
         system: TITLE_GENERATOR_SYSTEM_PROMPT,
-        model: gemini({
-          model: "gemini-2.5-flash-lite",
-          apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
+        model: openai({
+          model: "deepseek-chat",
+          apiKey: process.env.DEEPSEEK_API_KEY,
+          baseUrl: DEEPSEEK_BASE_URL,
+          // DeepSeek's API honors the legacy `max_tokens` field, but agent-kit's
+          // OpenAI adapter types only model the newer `max_completion_tokens`.
+          // Runtime is fine — defaultParameters is Object.assign'd into the body.
           defaultParameters: {
-            generationConfig: { temperature: 0, maxOutputTokens: 50 },
-          },
+            temperature: 0,
+            max_tokens: 50,
+          } as never,
         }),
       });
 
@@ -156,12 +167,16 @@ export const processMessage = inngest.createFunction(
       name: "polaris",
       description: "An expert AI coding assistant",
       system: systemPrompt,
-      model: gemini({
-        model: "gemini-2.5-flash",
-        apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
+      model: openai({
+        model: "deepseek-chat",
+        apiKey: process.env.DEEPSEEK_API_KEY,
+        baseUrl: DEEPSEEK_BASE_URL,
+        // deepseek-chat caps output at 8192 tokens; lower the prior 16000
+        // Gemini cap accordingly. See note above re: `max_tokens` cast.
         defaultParameters: {
-          generationConfig: { temperature: 0.3, maxOutputTokens: 16000 },
-        },
+          temperature: 0.3,
+          max_tokens: 8000,
+        } as never,
       }),
       tools: [
         createListFilesTool({ internalKey, projectId }),
@@ -182,16 +197,13 @@ export const processMessage = inngest.createFunction(
       maxIter: 20,
       router: ({ network }) => {
         const lastResult = network.state.results.at(-1);
-        const hasTextResponse = lastResult?.output.some(
-          (m) => m.type === "text" && m.role === "assistant"
-        );
         const hasToolCalls = lastResult?.output.some(
           (m) => m.type === "tool_call"
         );
 
-        // Gemini (via agent-kit) outputs text AND tool calls together
-        // Only stop if there's text WITHOUT tool calls (final response)
-        if (hasTextResponse && !hasToolCalls) {
+        // DeepSeek (OpenAI-compatible) emits tool calls and final text in
+        // separate turns. Terminate when the last turn has no tool calls.
+        if (!hasToolCalls) {
           return undefined;
         }
         return codingAgent;

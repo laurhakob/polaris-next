@@ -2,7 +2,7 @@ import { generateText, Output } from "ai";
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { google } from "@ai-sdk/google";
+import { deepseek } from "@ai-sdk/deepseek";
 
 const suggestionSchema = z.object({
   suggestion: z
@@ -82,7 +82,7 @@ export async function POST(request: Request) {
       .replace("{lineNumber}", lineNumber.toString());
 
     const { output } = await generateText({
-      model: google("gemini-2.5-flash-lite"),
+      model: deepseek("deepseek-chat"),
       output: Output.object({ schema: suggestionSchema }),
       prompt,
     });

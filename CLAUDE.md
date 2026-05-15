@@ -23,7 +23,7 @@ There is no test runner configured in this repo.
 - `CLERK_JWT_ISSUER_DOMAIN` — set on the **Convex** deployment (referenced in `convex/auth.config.ts`), not the Next.js process.
 - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` / `CLERK_SECRET_KEY` — Clerk.
 - `POLARIS_CONVEX_INTERNAL_KEY` — shared secret gating `convex/system.ts` mutations (see auth model below). Must be set **identically** in both Next.js env and Convex env.
-- `GOOGLE_GENERATIVE_AI_API_KEY`, `FIRECRAWL_API_KEY` — AI and URL-scraping providers.
+- `DEEPSEEK_API_KEY`, `FIRECRAWL_API_KEY` — AI and URL-scraping providers. `GOOGLE_GENERATIVE_AI_API_KEY` is retained in `.env.local` for rollback only; no code reads it after the DeepSeek migration.
 - Inngest signing key / event key for production.
 
 ## Architecture
@@ -45,7 +45,7 @@ Convex functions run under two distinct trust models; mixing them up causes sile
 
 Chat messages flow: `POST /api/messages` → creates user + placeholder assistant `messages` rows via `system.createMessage` → sends `message/sent` Inngest event → `processMessage` (in `src/features/conversations/inngest/process-message.ts`) runs the `@inngest/agent-kit` network → agent calls file tools in `src/features/conversations/inngest/tools/*` which mutate Convex → assistant message is updated with final text (status `completed`). Cancellation goes through `POST /api/messages/cancel` which emits `message/cancel`; `processMessage` declares `cancelOn` so Inngest terminates the run mid-flight.
 
-The agent-kit **network router** in `processMessage` has a subtle invariant: Gemini (via agent-kit's adapter) emits text and tool calls in the same turn, so the router only terminates when the last result has text **without** tool calls. Loosening this check will cut responses off early.
+The agent-kit **network router** in `processMessage` follows the OpenAI-compatible turn shape used by DeepSeek: tool calls and final text come in separate turns. The router terminates when the last result has **no** tool calls. (Earlier Gemini wiring required a different check — text *without* tool calls — because Gemini emits both in the same turn; if you ever swap back to a Gemini-style provider, revisit this check.)
 
 ### GitHub import/export
 
@@ -58,8 +58,8 @@ The agent-kit **network router** in `processMessage` has a subtle invariant: Gem
 ### Editor stack
 
 - CodeMirror 6 (`src/features/editor/`) with custom extensions under `extensions/`.
-- `suggestion/` — inline Copilot-style completions via `POST /api/suggestion` (Gemini 2.5 Flash-Lite, structured output).
-- `quick-edit/` — selection-based rewrite via `POST /api/quick-edit` (Gemini 2.5 Flash, structured output, with Firecrawl URL scraping from the instruction).
+- `suggestion/` — inline Copilot-style completions via `POST /api/suggestion` (DeepSeek `deepseek-chat`, structured output).
+- `quick-edit/` — selection-based rewrite via `POST /api/quick-edit` (DeepSeek `deepseek-chat`, structured output, with Firecrawl URL scraping from the instruction).
 - Tab state is a per-project Zustand store (`src/features/editor/store/use-editor-store.ts`) with a VS Code–style preview-tab concept: single-click opens as preview (replaces the existing preview slot); double-click or edit pins it.
 
 ### Preview: WebContainer
@@ -82,6 +82,6 @@ This project uses Next.js 16, where the old `middleware.ts` convention is rename
 
 - shadcn/ui (New York style, `neutral` base) under `src/components/ui`. Configured in `components.json`; add components with `npx shadcn@latest add <name>`.
 - Feature-first layout under `src/features/<feature>/{components,hooks,inngest,store,extensions,...}` — new feature code should follow this shape rather than going into top-level `src/components` or `src/lib`.
-- AI model selection is intentional per call-site: Gemini 2.5 Flash for the coding agent and quick-edit; Gemini 2.5 Flash-Lite for inline suggestions, title generation, and the demo Inngest job. Don't unify these without reason.
-- Agent tool schemas are kept **flat** (no `z.array(z.object(...))` nesting) because Gemini Flash returns `MALFORMED_FUNCTION_CALL` when asked to generate array-of-object arguments. The coding agent calls `createFile` once per file instead of batching — the Convex `createFiles` mutation still accepts an array and remains the underlying write path.
+- AI provider is DeepSeek (`deepseek-chat`) for every LLM call site — coding agent, title generation, quick-edit, inline suggestions, and the demo Inngest job. The agent network uses `deepseek` from `@inngest/ai/models`; the `generateText`-based routes use `deepseek` from `@ai-sdk/deepseek`. `@ai-sdk/google` is still installed and `GOOGLE_GENERATIVE_AI_API_KEY` is still in `.env.local`, but no code reads them — they exist as a rollback path.
+- Agent tool schemas are kept **flat** (no `z.array(z.object(...))` nesting). This was originally a workaround for Gemini Flash returning `MALFORMED_FUNCTION_CALL` on array-of-object arguments; DeepSeek's OpenAI-compatible function calling handles nested schemas, so the constraint is no longer strictly required, but we keep it for stability. The coding agent calls `createFile` once per file instead of batching — the Convex `createFiles` mutation still accepts an array and remains the underlying write path.
 - Optimistic updates on file mutations (`src/features/projects/hooks/use-files.ts`) — when adding a new file-mutating hook, follow the `withOptimisticUpdate` pattern against `api.files.getFolderContents` so the tree doesn't flicker.
